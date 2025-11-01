@@ -1,8 +1,9 @@
-use axum::{routing::get, Json, Router};
-use serde_json::{json, Value};
+use axum::{routing::get, Router};
+use handlers::health::health_check;
 use state::AppState;
 use std::env;
 
+mod handlers;
 mod state;
 
 #[tokio::main]
@@ -19,16 +20,11 @@ async fn main() {
 
     println!("Connected to database successfully!");
 
-    let app = Router::new().route("/health", get(health_check));
+    let app = Router::new()
+        .route("/health", get(health_check))
+        .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     println!("Server is running on http://0.0.0.0:3000");
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn health_check() -> Json<Value> {
-    Json(json!({
-        "status": "ok",
-        "message": "Server is running"
-    }))
 }
