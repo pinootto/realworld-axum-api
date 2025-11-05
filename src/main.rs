@@ -1,10 +1,11 @@
 use axum::{routing::get, Router};
-use handlers::health::health_check;
-use state::AppState;
+use realworld_axum_api::handlers::health_check;
+use realworld_axum_api::state::AppState;
 use std::env;
 
-mod handlers;
-mod state;
+// mod handlers;
+// mod models;
+// mod state;
 
 #[tokio::main]
 async fn main() {
