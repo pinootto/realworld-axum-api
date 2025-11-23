@@ -45,6 +45,48 @@ where
     }
 }
 
+impl<S> FromRequestParts<S> for OptionalAuth
+where
+    AppState: FromRef<S>,
+    S: Send + Sync,
+{
+    type Rejection = StatusCode;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let app_state = AppState::from_ref(state);
+
+        // Try to extract Authorization header
+        let headers = &parts.headers;
+        let token = match extract_token_from_headers(headers) {
+            Some(token) => token,
+            None => return Ok(OptionalAuth(None)),
+        };
+
+        // Try to validate JWT token
+        let jwt_secret =
+            std::env::var("JWT_SECRET").map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        let claims = match validate_token(&token, &jwt_secret) {
+            Ok(claims) => claims,
+            Err(_) => return Ok(OptionalAuth(None)),
+        };
+
+        // Try to get user from database
+        let user_id = match Uuid::parse_str(&claims.sub) {
+            Ok(id) => id,
+            Err(_) => return Ok(OptionalAuth(None)),
+        };
+
+        let user = app_state
+            .user_repository
+            .find_by_id(user_id)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        Ok(OptionalAuth(user))
+    }
+}
+
 fn extract_token_from_headers(headers: &HeaderMap) -> Option<String> {
     let auth_header = headers.get("Authorization")?.to_str().ok()?;
 
