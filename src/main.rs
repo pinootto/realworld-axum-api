@@ -1,4 +1,6 @@
+use axum::routing::post;
 use axum::{routing::get, Router};
+use realworld_axum_api::handlers::auth::{current_user, login, register};
 use realworld_axum_api::handlers::health_check;
 use realworld_axum_api::state::AppState;
 use std::env;
@@ -22,10 +24,21 @@ async fn main() {
     println!("Connected to database successfully!");
 
     let app = Router::new()
+        // Health check endpoint
         .route("/health", get(health_check))
+        // Authentication endpoints
+        .route("/api/users", post(register))
+        .route("/api/users/login", post(login))
+        .route("/api/user", get(current_user))
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     println!("Server is running on http://0.0.0.0:3000");
+    println!("Available endpoints:");
+    println!("  POST /api/users         - Register new user");
+    println!("  POST /api/users/login   - Login existing user");
+    println!("  GET  /api/user          - Get current user (requires auth)");
+    println!("  GET  /health            - Health check");
+
     axum::serve(listener, app).await.unwrap();
 }
