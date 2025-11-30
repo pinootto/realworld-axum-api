@@ -21,7 +21,7 @@ impl UserRepository {
     ) -> Result<User, sqlx::Error> {
         let user = sqlx::query_as::<_, User>(
             r#"
-            INSERT INTO users (username, email, password_hash: )
+            INSERT INTO users (username, email, password_hash)
             VALUES ($1, $2, $3)
             RETURNING id, username, email, password_hash, bio, image, created_at, updated_at
             "#,

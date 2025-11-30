@@ -3,7 +3,16 @@ name = "realworld-axum-api"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "realworld_axum_api"
+path = "src/lib.rs"
+
+[[bin]]
+name = "realworld-axum-api"
+path = "src/main.rs"
+
 [dependencies]
+# Core web framework
 axum = { version = "0.8.4", features = ["macros"] }
 tokio = { version = "1.47.1", features = ["full"] }
 
@@ -24,5 +33,10 @@ chrono = { version = "0.4", features = ["serde"] }
 # Configuration
 dotenvy = "0.15"
 
+# Auth
 bcrypt = "0.17.1"
 jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
+
+# Emain sending
+lettre = { version = "0.11", features = ["tokio1-native-tls", "builder", "hostname"] }
+
