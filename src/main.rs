@@ -1,7 +1,6 @@
 use axum::routing::post;
 use axum::{routing::get, Router};
-use realworld_axum_api::handlers::auth::{current_user, login, register};
-use realworld_axum_api::handlers::health_check;
+use realworld_axum_api::handlers::{current_user, health_check, login, register};
 use realworld_axum_api::state::AppState;
 use std::env;
 
