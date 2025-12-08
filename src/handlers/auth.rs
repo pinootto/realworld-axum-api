@@ -104,6 +104,10 @@ pub async fn login(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
+    // Check if email is verified
+    // if not verified, return UNAUTHORIZED
+    // todo
+
     // Verify password
     let password_valid = verify_password(&payload.user.password, &user.password_hash)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
