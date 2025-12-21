@@ -5,4 +5,5 @@ pub mod user;
 
 pub use email_verification_token::EmailVerificationToken;
 pub use password_reset_token::PasswordResetToken;
+pub use refresh_token::RefreshToken;
 pub use user::User;
