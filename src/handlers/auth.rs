@@ -4,10 +4,10 @@ use crate::auth::middleware::RequireAuth;
 use crate::auth::password::hash_password;
 use crate::auth::tokens::generate_refresh_token;
 use crate::auth::{jwt::generate_token, password::verify_password};
-use crate::schemas::auth_schemas::*;
 use crate::schemas::password_reset_schemas::{
     ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse,
 };
+use crate::schemas::{auth_schemas::*, RefreshTokenRequest, RefreshTokenResponse};
 use crate::state::AppState;
 use crate::utils::generate_verification_token;
 use axum::{extract::State, http::StatusCode, Json};
@@ -325,4 +325,32 @@ pub async fn reset_password(
         message: "Password has been reset successfully. You can now login with your new password."
             .to_string(),
     }))
+}
+
+pub async fn refresh_token(
+    State(state): State<AppState>,
+    Json(payload): Json<RefreshTokenRequest>,
+) -> Result<Json<RefreshTokenResponse>, StatusCode> {
+    // Look up the refresh token in database
+    let refresh_token = state
+        .refresh_token_repository
+        .find_by_token(&payload.refresh_token)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // Update last_used_at timestamp
+    state
+        .refresh_token_repository
+        .update_last_used(&payload.refresh_token)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // Generate new access token
+    let jwt_secret = std::env::var("JWT_SECRET").map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let access_token = generate_token(&refresh_token.user_id, &jwt_secret)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // Return new access token
+    Ok(Json(RefreshTokenResponse { access_token }))
 }
