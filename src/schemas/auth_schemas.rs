@@ -40,7 +40,7 @@ pub struct LoginUserData {
 pub struct LoginResponse {
     pub user: UserData,
     pub access_token: String,
-    pub refresh_tolen: String,
+    pub refresh_token: String,
 }
 
 #[derive(Debug, Serialize)]
