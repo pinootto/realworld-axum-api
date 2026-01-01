@@ -1,8 +1,8 @@
 use axum::routing::post;
 use axum::{routing::get, Router};
 use realworld_axum_api::handlers::{
-    current_user, forgot_password, health_check, login, refresh_token, register, reset_password,
-    verify_email,
+    current_user, forgot_password, health_check, login, logout, refresh_token, register,
+    reset_password, verify_email,
 };
 use realworld_axum_api::state::AppState;
 use std::env;
@@ -36,6 +36,7 @@ async fn main() {
         .route("/api/auth/forgot-password", post(forgot_password))
         .route("/api/auth/reset-password", post(reset_password))
         .route("/api/auth/refresh", post(refresh_token))
+        .route("/api/auth/logout", post(logout))
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -48,6 +49,7 @@ async fn main() {
     println!("  POST /api/auth/forgot-password      - Request password reset");
     println!("  POST /api/auth/reset-password       - Reset password with token");
     println!("  POST /api/auth/refresh              - Get new access token");
+    println!("  POST /api/auth/logout               - Logout (delete refresh token)");
     println!("  GET  /health                        - Health check");
 
     axum::serve(listener, app).await.unwrap();

@@ -7,7 +7,9 @@ use crate::auth::{jwt::generate_token, password::verify_password};
 use crate::schemas::password_reset_schemas::{
     ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse,
 };
-use crate::schemas::{auth_schemas::*, RefreshTokenRequest, RefreshTokenResponse};
+use crate::schemas::{
+    auth_schemas::*, LogoutRequest, LogoutResponse, RefreshTokenRequest, RefreshTokenResponse,
+};
 use crate::state::AppState;
 use crate::utils::generate_verification_token;
 use axum::{extract::State, http::StatusCode, Json};
@@ -369,7 +371,23 @@ pub async fn refresh_token(
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        // TODO: Send security alert email
+        // Get user info for email
+        let user = state
+            .user_repository
+            .find_by_id(refresh_token.user_id)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        // Send security alert email
+        if let Err(e) = state
+            .email_service
+            .send_security_alert(&user.email, &user.username)
+            .await
+        {
+            eprintln!("Failed to send security alert email: {}", e);
+            // Don't fail the request if email fails
+        }
 
         return Err(StatusCode::UNAUTHORIZED);
     }
@@ -398,5 +416,21 @@ pub async fn refresh_token(
     Ok(Json(RefreshTokenResponse {
         access_token,
         refresh_token: new_refresh_token,
+    }))
+}
+
+pub async fn logout(
+    State(state): State<AppState>,
+    Json(payload): Json<LogoutRequest>,
+) -> Result<Json<LogoutResponse>, StatusCode> {
+    // Simply delete the refresh token from database
+    state
+        .refresh_token_repository
+        .delete_token(&payload.refresh_token)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(LogoutResponse {
+        message: "Logged out successfully".to_string(),
     }))
 }
